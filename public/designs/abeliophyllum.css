@@ -1,0 +1,25 @@
+.passage {
+  float: right;
+  width: 1000px;
+  margin-right: 20px;
+  font-size: 30px;
+  padding-top: 150px;
+}
+
+.image {
+  float: left;
+  width: 610px;
+}
+
+.links {
+  clear: both;
+  font-size: 30px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 50px;
+  color: #f2af2c;
+  border-bottom: 2px solid darkGrey;
+  padding: 10px;
+}

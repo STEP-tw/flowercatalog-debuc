@@ -1,0 +1,24 @@
+h1 {
+  border-top: 1px solid darkGrey;
+  border-bottom: 2px solid darkGrey;
+  padding: 10px;
+  text-align: center;
+  font-size: 50px;
+  color: #f2af2c;
+}
+
+.flowers {
+  float: left;
+}
+
+.links {
+  float: right;
+  font-size: 30px;
+  height: 450px;
+  width: 620px;
+  padding-top: 280px;
+}
+
+#animation {
+  padding-left: 150px;
+}
