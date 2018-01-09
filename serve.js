@@ -155,7 +155,7 @@ app.get('/login',(req,res)=>{
     return;
   }
   res.setHeader('Content-type','text/html');
-  res.write('<form method="POST"> <input name="userName"><input type="submit"></form>');
+  res.write('Log In First for Comment<br><form method="POST"> <input name="userName"><input type="submit"></form>');
   res.end();
 });
 
@@ -176,7 +176,7 @@ app.post('/login',(req,res)=>{
   let sessionid = new Date().getTime();
   res.setHeader('Set-Cookie',`sessionid=${sessionid}`);
   user.sessionid = sessionid;
-  res.redirect('/home');
+  res.redirect('/guestbook.html');
 });
 
 app.get('/logout',(req,res)=>{
