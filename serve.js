@@ -202,7 +202,6 @@ app.use((req,res)=>{
   }
 });
 
-
 let server = http.createServer((req,res)=>app.main(req,res));
 server.listen(PORT);
 getAllComments();
