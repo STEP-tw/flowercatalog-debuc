@@ -1,9 +1,6 @@
 const toKeyValue = kv=>{
-    console.log('---------');
-    console.log(kv);
-    console.log('---------');
     let parts = kv.split('=');
-    return {key:parts[0].trim(),value:parts[1].trim()};
+    return {key:parts[0].trim(),value:parts[1].trim().split('+').join(' ')};
 };
 const accumulate = (o,kv)=> {
   o[kv.key] = kv.value;
