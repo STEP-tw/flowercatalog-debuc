@@ -5,7 +5,7 @@ const timeStamp = require('./time.js').timeStamp;
 const PORT = 8080;
 
 let toS = o=>JSON.stringify(o,null,2);
-let registered_users = [{userName:'debarun'}];
+let registered_users = [{userName:'Debarun'}];
 
 let app = WebApp.create();
 let allComments;
@@ -51,8 +51,10 @@ let getContentHeader = function(filepath){
   return header[extension]||header.txt;
 }
 
-let parseData = function(comment) {
+let parseData = function(req) {
+  let comment = req.body;
   let date = new Date();
+  comment.Name = req.user.userName
   comment.Date = date.toDateString()+' '+date.toLocaleTimeString();
   allComments.unshift(comment);
   let commentsJSON = JSON.stringify(allComments, null, 2);
@@ -62,12 +64,10 @@ let parseData = function(comment) {
 let generateCommentHTML = function(){
   let html = `<div class="user_comments">`;
   allComments.forEach(function(comment) {
-    let fields = Object.keys(comment);
-    for (let count = 0; count < fields.length; count++) {
-      let currentField = fields[count];
-      html += `<b>${currentField}:</b>${comment[currentField]}<br>`;
-    }
-    html += `<br>`;
+    html += `<b>Name:</b>${comment.Name}<br>`
+    html += `<b>Comment:</b>${comment.Comment}<br>`;
+    html += `<b>Date:</b>${comment.Date}<br>`;
+    html +='<br>'
   });
   return html;
 }
@@ -84,7 +84,7 @@ let determineContentForUser = function(req,data){
     data = data.replace('<h2>','<h2>'+html);
     data = data.replace('<div class="submit_comment">','<div class="submit_comment" style="display:none">');
   }else{
-    data = data.replace('<h2>',`<h2>USER: ${req.user.userName}`);
+    data = data.replace('<h2>',`<h2>USER: ${req.user.userName} <a href="/logout">Logout</a>`);
   }
   return data;
 }
@@ -151,7 +151,7 @@ app.post('/comment',(req,res)=>{
     res.redirect('/login');
     return;
   }
-  parseData(req.body);
+  parseData(req);
   res.redirect('/guestbook.html');
 });
 
