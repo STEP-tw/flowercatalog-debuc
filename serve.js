@@ -78,6 +78,17 @@ let handleRequest = function(statusCode,res,dataToWrite){
   res.end();
 }
 
+let determineContentForUser = function(req,data){
+  if(!req.user){
+    html = `<a href="/login">Log In</a>`;
+    data = data.replace('<h2>','<h2>'+html);
+    data = data.replace('<div class="submit_comment">','<div class="submit_comment" style="display:none">');
+  }else{
+    data = data.replace('<h2>',`<h2>USER: ${req.user.userName}`);
+  }
+  return data;
+}
+
 let serveFile = function(req,res){
   let url = './public'+req.url;
   if(fs.existsSync(url)){
@@ -107,6 +118,7 @@ app.get('/guestbook.html',(req,res)=>{
   let data = fs.readFileSync(url);
   let html = generateCommentHTML();
   data = data.toString('utf8').replace(`<div class="user_comments">`,html);
+  data = determineContentForUser(req,data);
   res.setHeader('Content-Type','text/html');
   handleRequest(200,res,data);
 });

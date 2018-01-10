@@ -1,16 +1,15 @@
+.user{
+  
+}
+
 .submit_comment {
-  width: 600px;
-  height: 600px;
-  float: left;
-  border: 2px solid grey;
+  height: 400px;
 }
 
 .user_comments {
-  width: 900px;
-  height: 500px;
+  height: auto;
   padding: 50px;
-  float: right;
-  border: 2px solid grey;
+  border-top: 2px solid black;
   font-size: 20px;
 }
 
