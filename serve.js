@@ -1,24 +1,40 @@
 const http = require('http');
 const fs = require('fs');
 const WebApp = require('./webapp');
+const timeStamp = require('./time.js').timeStamp;
+const PORT = 8080;
 
-const PORT = 8000;
-
+let toS = o=>JSON.stringify(o,null,2);
 let registered_users = [{userName:'debarun'}];
 
-let app = new WebApp();
+let app = WebApp.create();
 let allComments;
 
-let getAllComments = function(){
-  fs.readFile('./data/comments.json',(err,data) =>{
-    if(err){
-      fs.writeFile('./data/comments.json','[\n]',(err) => {});
-      allComments = [];
-      return;
-    }
-    allComments = JSON.parse(data);
-  });
+let logRequest = (req,res)=>{
+  let text = ['------------------------------',
+    `${timeStamp()}`,
+    `${req.method} ${req.url}`,
+    `HEADERS=> ${toS(req.headers)}`,
+    `COOKIES=> ${toS(req.cookies)}`,
+    `BODY=> ${toS(req.body)}`,''].join('\n');
+  fs.appendFile('request.log',text,()=>{});
+  console.log(`${req.method} ${req.url}`);
 }
+
+let getAllComments = function(){
+  let data = fs.readFileSync('./data/comments.json','utf8');
+  allComments = JSON.parse(data);
+}
+
+let loadUser = (req,res)=>{
+  let sessionid = req.cookies.sessionid;
+  let user = registered_users.find(u=>u.sessionid==sessionid);
+  if(sessionid && user){
+    console.log('Registering User');
+    req.user = user;
+    console.log(req.user);
+  }
+};
 
 let header = {
   html: 'text/html',
@@ -59,94 +75,53 @@ let generateCommentHTML = function(){
 let handleRequest = function(statusCode,res,dataToWrite){
   res.statusCode = statusCode;
   res.write(dataToWrite);
-  debugger;
   res.end();
 }
 
 let serveFile = function(req,res){
   let url = './public'+req.url;
-  fs.readFile(url,(err,data) => {
-    if(err){
-      handleRequest(404,res,'Not Found');
-      return;
-    }
+  if(fs.existsSync(url)){
+    let data = fs.readFileSync(url);
     res.setHeader('Content-Type',getContentHeader(url));
     handleRequest(200,res,data);
-  });
+    return;
+  }
+  handleRequest(404,res,'File Not Found!');
 }
+
+let redirectLoggedInUserToGuestbook = (req,res)=>{
+  if(req.url=='/login' && req.user)
+    res.redirect('/guestbook.html');
+}
+
+app.use(logRequest);
+app.use(loadUser);
+app.use(redirectLoggedInUserToGuestbook);
 
 app.get('/',(req,res)=>{
   res.redirect('/index.html');
 });
 
-app.get('/index.html',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/abeliophyllum.html',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/ageratum.html',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/designs/index.css',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/scripts/index.js',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/img/freshorigins.jpg',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/img/animated-flower-image-0021.gif',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/designs/abeliophyllum.css',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/img/pbase-Abeliophyllum.jpg',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/designs/ageratum.css',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/img/pbase-agerantum.jpg',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/designs/guestbook.css',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/docs/Ageratum.pdf',(req,res)=>{
-  serveFile(req,res);
-});
-
-app.get('/docs/Abeliophyllum.pdf',(req,res)=>{
-  serveFile(req,res);
-});
-
 app.get('/guestbook.html',(req,res)=>{
   let url = './public'+req.url;
-  fs.readFile(url,(err,data) => {
-    if(err){
-      handleRequest(404,res,'Not Found');
-      return;
-    }
-    let html = generateCommentHTML();
-    data = data.toString('utf8').replace(`<div class="user_comments">`,html);
-    res.setHeader('Content-Type','text/html');
-    handleRequest(200,res,data);
-  });
+  let data = fs.readFileSync(url);
+  let html = generateCommentHTML();
+  data = data.toString('utf8').replace(`<div class="user_comments">`,html);
+  res.setHeader('Content-Type','text/html');
+  handleRequest(200,res,data);
+});
+
+app.post('/login',(req,res)=>{
+  let user = registered_users.find(u=>u.userName==req.body.userName);
+  if(!user) {
+    res.setHeader('Set-Cookie',`logInFailed=true`);
+    res.redirect('/login');
+    return;
+  }
+  let sessionid = new Date().getTime();
+  res.setHeader('Set-Cookie',`sessionid=${sessionid}`);
+  user.sessionid = sessionid;
+  res.redirect('/guestbook.html');
 });
 
 app.get('/login',(req,res)=>{
@@ -164,45 +139,20 @@ app.post('/comment',(req,res)=>{
     res.redirect('/login');
     return;
   }
-  res.redirect('/guestbook.html');
-});
-
-app.post('/login',(req,res)=>{
-  let user = registered_users.find(u=>u.userName==req.body.userName);
-  if(!user) {
-    res.redirect('/login');
-    return;
-  }
-  let sessionid = new Date().getTime();
-  res.setHeader('Set-Cookie',`sessionid=${sessionid}`);
-  user.sessionid = sessionid;
+  parseData(req.body);
   res.redirect('/guestbook.html');
 });
 
 app.get('/logout',(req,res)=>{
-  if(!req.user) {
-    res.redirect('/login');
-    return;
-  }
-  res.setHeader('Set-Cookie','');
+  res.setHeader('Set-Cookie',[`loginFailed=false,Expires=${new Date(1).toUTCString()}`,`sessionid=0,Expires=${new Date(1).toUTCString()}`]);
   delete req.user.sessionid;
-  res.redirect('/login');
+  res.redirect('/index.html');
 });
 
+app.postProcess(serveFile);
 
-app.use((req,res)=>{
-  if(req.url=='/comment'&& req.user) parseData(req.body);
-});
-
-app.use((req,res)=>{
-  let sessionid = req.Cookies.sessionid;
-  let user = registered_users.find(u=>u.sessionid==sessionid);
-  if(sessionid && user){
-    req.user = user;
-  }
-});
-
-let server = http.createServer((req,res)=>app.main(req,res));
-server.listen(PORT);
 getAllComments();
-console.log(`Listening on ${PORT}`);
+
+let server = http.createServer(app);
+server.on('error',e=>console.error('**error**',e.message));
+server.listen(PORT,(e)=>console.log(`server listening at ${PORT}`));
